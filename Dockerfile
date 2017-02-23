@@ -48,7 +48,6 @@ ENV CONFIG "\
     --with-http_random_index_module \
     --with-http_secure_link_module \
     --with-http_degradation_module \
-    --add-module=/tmp/nginx-module-vts \
     --with-http_sysguard_module \
     --with-http_dyups_module \
     --with-http_lua_module \
@@ -61,13 +60,12 @@ RUN \
 addgroup -S nginx \
 && adduser -D -S -h /usr/local/nginx -s /sbin/nologin -G nginx nginx 
 
-RUN apk add lua
-
 RUN cd /tmp \
     && git clone git://github.com/vozlt/nginx-module-vts.git \
     && cd nginx-module-vts \
     && git fetch --all --tags --prune \
     && git checkout tags/${VTS_VERSION}
+
 
 RUN cd /tmp \
     && git clone https://github.com/keplerproject/luarocks.git \
@@ -83,10 +81,11 @@ RUN cd /tmp \
     && git fetch --all --tags --prune \
     && git checkout tags/${TENGINE_PACKAGE}
 
+RUN cp -r /tmp/nginx-module-vts/ /tmp/tengine/modules/
 RUN cd /tmp/tengine \
     && sh ./configure $CONFIG --with-debug  \
     && make \
-    && mv objs/nginx objs/nginx-debug \
+    && cp objs/nginx objs/nginx-debug \
     && sh ./configure $CONFIG \
     && make \
     && make install \
@@ -102,7 +101,6 @@ scanelf --needed --nobanner /usr/local/nginx/sbin/nginx \
 
 && ln -sf /dev/stdout /usr/local/nginx/logs/access.log \
 && ln -sf /dev/stderr /usr/local/nginx/logs/error.log 
-
 COPY nginx.conf /usr/local/nginx/conf/nginx.conf
 COPY nginx.vh.default.conf /usr/local/nginx/conf/conf.d/default.conf 
 
